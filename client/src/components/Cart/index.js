@@ -5,9 +5,18 @@ import './style.css';
 import { useStoreContext } from '../../utils/GlobalState';
 import { TOGGLE_CART, ADD_MULTIPLE_TO_CART } from "../../utils/actions";
 import { idbPromise } from "../../utils/helpers";
+import { QUERY_CHECKOUT } from '../../utils/queries';
+import { loadStripe } from '@stripe/stripe-js';
+import { useLazyQuery } from '@apollo/client';
+
+
+const stripePromise = loadStripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
+
+
 const Cart = () => {
 
     const [state, dispatch] = useStoreContext();
+    const [getCheckout, { data }] = useLazyQuery(QUERY_CHECKOUT);
 
     useEffect(() => {
         async function getCart() {
@@ -42,6 +51,19 @@ const Cart = () => {
         return sum.toFixed(2);
     }
 
+    function submitCheckout() {
+      const productIds = [];
+
+      getCheckout({
+        variables: { products: productIds }
+      });
+    
+      state.cart.forEach((item) => {
+        for (let i = 0; i < item.purchaseQuantity; i++) {
+          productIds.push(item._id);
+        }
+      });
+    }
    
 
 
@@ -58,8 +80,8 @@ const Cart = () => {
                 <strong>Total: ${calculateTotal()}</strong>
                 {
                 Auth.loggedIn() ?
-                    <button>
-                    Checkout
+                    <button onClick={submitCheckout}>
+                      Checkout
                     </button>
                     :
                     <span>(log in to check out)</span>
